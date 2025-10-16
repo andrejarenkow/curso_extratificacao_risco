@@ -30,7 +30,7 @@ year_to_display = st.selectbox('Selecione o ano', options = [2013, 2014,2015,201
 folium.Choropleth(
     geo_data=merged_gdf.to_json(),
     data=merged_gdf,
-    columns=['CD_BAIRRO', year_to_display],
+    columns=['CD_BAIRRO', str(year_to_display]),
     key_on='feature.properties.CD_BAIRRO',
     fill_color='YlOrRd',
     fill_opacity=0.7,
