@@ -23,7 +23,7 @@ center_lon = merged_gdf.geometry.centroid.x.mean()
 m = folium.Map(location=[center_lat, center_lon], zoom_start=10)
 
 # Define the year for the choropleth and tooltip
-year_to_display = '2024' # You can change this to any year column in casos_df
+year_to_display = st.selectbox('Selecione o ano', options = [2013, 2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024]) # You can change this to any year column in casos_df
 
 # Add the choropleth layer
 folium.Choropleth(
@@ -59,4 +59,4 @@ folium.LayerControl().add_to(m)
 
 # Display the map
 # call to render Folium map in Streamlit
-st_data = st_folium(m, width = 1000, height = 500, returned_objects=[])
+st_data = st_folium(m, width = 1000, height = 700, returned_objects=[])
