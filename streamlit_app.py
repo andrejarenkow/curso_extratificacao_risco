@@ -4,10 +4,10 @@ import geopandas as gpd
 from streamlit_folium import st_folium
 
 # Ler arquivo /content/novohamburgo_bairro.shp como geodataframe
-gdf = gpd.read_file('/content/novohamburgo_bairro.shp')
+gdf = gpd.read_file('novohamburgo_bairro.shp')
 
 # Load the CSV data, specifying the separator
-casos_df = pd.read_csv('/content/novohamburgo_casos.csv', sep=';')
+casos_df = pd.read_csv('novohamburgo_casos.csv', sep=';')
 
 # Convert 'bairro' column in casos_df to string type for merging
 casos_df['bairro'] = casos_df['bairro'].astype(str)
