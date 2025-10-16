@@ -2,6 +2,7 @@ import folium
 import pandas as pd
 import geopandas as gpd
 from streamlit_folium import st_folium
+import streamlit as st
 
 # Ler arquivo /content/novohamburgo_bairro.shp como geodataframe
 gdf = gpd.read_file('novohamburgo_bairro.shp')
