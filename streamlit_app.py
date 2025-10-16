@@ -1,6 +1,7 @@
 import folium
 import pandas as pd
 import geopandas as gpd
+from streamlit_folium import st_folium
 
 # Ler arquivo /content/novohamburgo_bairro.shp como geodataframe
 gdf = gpd.read_file('/content/novohamburgo_bairro.shp')
@@ -57,4 +58,5 @@ folium.GeoJson(
 folium.LayerControl().add_to(m)
 
 # Display the map
-m
+# call to render Folium map in Streamlit
+st_data = st_folium(m, width=725, returned_objects=[])
