@@ -59,4 +59,4 @@ folium.LayerControl().add_to(m)
 
 # Display the map
 # call to render Folium map in Streamlit
-st_data = st_folium(m, returned_objects=[])
+st_data = st_folium(m, width = 1000, returned_objects=[])
