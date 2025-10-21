@@ -4,3 +4,5 @@ geopandas
 plotly
 folium
 streamlit_folium 
+matplotlib
+seaborn
