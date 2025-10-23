@@ -242,7 +242,7 @@ else:
                     if 0.6 <= r <= 0.9 and row['tipo_da_forma_de_abastecimento'] == 'SAA':
                         return 'Satisfatória'
 
-                    elif 0 <= r['resultado'] <= 1.5 and r['tipo_da_forma_de_abastecimento'] in ['SAC', 'SAI', 'CARRO-PIPA']:
+                    elif 0 <= r['resultado'] <= 1.5 and row['tipo_da_forma_de_abastecimento'] in ['SAC', 'SAI', 'CARRO-PIPA']:
                         return 'Satisfatória'
                     
                     else:
