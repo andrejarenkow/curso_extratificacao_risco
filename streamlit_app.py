@@ -264,8 +264,8 @@ else:
                 .size()
                 .reset_index(name='Contagem')
             )
-    
-            st.markdown("### Classificação da qualidade da água")
+            total_amostras = len(dados_parametros['numero_da_amostra'])
+            st.markdown(f"### Total de amostras - {total_amostras}")
             
     
             # Criar gráficos de pizza por parâmetro
