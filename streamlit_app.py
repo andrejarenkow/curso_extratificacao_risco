@@ -1,33 +1,34 @@
+# streamlit_app_v3.py
 import streamlit as st
 import pandas as pd
 import requests
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px
+import plotly.graph_objects as go
+import seaborn as sns
 
 st.set_page_config(page_title="Dashboard Dengue & Vigiágua", layout="wide")
 
 sns.set_style("white")
 sns.despine()
 
-# ---------- Helpers & Cached API calls ----------
+# ---------- Funções utilitárias e cache ----------
 
-@st.cache_data(ttl=60*60)
+@st.cache_data(ttl=3600)
 def carregar_codigos_ibge():
     url = 'https://www.gov.br/receitafederal/dados/municipios.csv'
     df = pd.read_csv(url, encoding='latin1', sep=';')
-    rs = df[df['UF']=='RS']
+    rs = df[df['UF'] == 'RS']
     return rs
 
-@st.cache_data(ttl=30*60)
+@st.cache_data(ttl=1800)
 def get_last_counting_public(municipality):
     dados = pd.DataFrame()
     page = 1
     while True:
         url = f"https://contaovos.com/pt-br/api/lastcountingpublic?municipality={municipality}&page={page}"
         try:
-            response = requests.get(url, timeout=20)
-            data = response.json()
+            r = requests.get(url, timeout=15)
+            data = r.json()
         except Exception:
             break
         if not data:
@@ -40,15 +41,15 @@ def get_last_counting_public(municipality):
     return dados
 
 def get_ido(df):
-    return float(df[df['eggs']>0]['eggs'].mean()) if not df.empty else None
+    return float(df[df['eggs'] > 0]['eggs'].mean()) if not df.empty else None
 
 def get_ipo(df):
-    return float(((df['eggs']>0).sum()/len(df)).round(4)) if (not df.empty and len(df)>0) else None
+    return float(((df['eggs'] > 0).sum() / len(df)).round(4)) if (not df.empty and len(df) > 0) else None
 
 def get_imo(df):
     return float(df['eggs'].mean()) if (not df.empty and 'eggs' in df.columns) else None
 
-@st.cache_data(ttl=30*60)
+@st.cache_data(ttl=1800)
 def buscar_dados_dengue(nome_municipio, SEi, SEf, ano_inicial, ano_final, cod_ibge7_rs_dict):
     url = "https://info.dengue.mat.br/api/alertcity"
     geocode = cod_ibge7_rs_dict.get(nome_municipio)
@@ -72,7 +73,7 @@ def buscar_dados_dengue(nome_municipio, SEi, SEf, ano_inicial, ano_final, cod_ib
         return pd.DataFrame()
     return dados
 
-@st.cache_data(ttl=30*60)
+@st.cache_data(ttl=1800)
 def buscar_parametros_sisagua(municipio: str, ano: int, cod_ibge7_rs_dict=None):
     if cod_ibge7_rs_dict is None or municipio not in cod_ibge7_rs_dict:
         return pd.DataFrame()
@@ -96,7 +97,6 @@ def buscar_parametros_sisagua(municipio: str, ano: int, cod_ibge7_rs_dict=None):
         offset = 0
         dados = []
         amostras_vistas = set()
-
         while True:
             params = {
                 "codigo_ibge": codigo_ibge,
@@ -105,7 +105,6 @@ def buscar_parametros_sisagua(municipio: str, ano: int, cod_ibge7_rs_dict=None):
                 "offset": offset,
                 "parametro": parametro_da_vez
             }
-
             try:
                 r = requests.get(url, params=params, headers=headers, timeout=20)
                 if r.status_code != 200:
@@ -113,38 +112,29 @@ def buscar_parametros_sisagua(municipio: str, ano: int, cod_ibge7_rs_dict=None):
                 data = r.json()
             except Exception:
                 break
-
             df_temp = pd.DataFrame(data)
             if df_temp.empty or "parametros" not in df_temp.columns:
                 break
-
             df_norm = pd.json_normalize(df_temp["parametros"])
             if "numero_da_amostra" in df_norm.columns:
                 novos = df_norm[~df_norm["numero_da_amostra"].isin(amostras_vistas)]
                 if novos.empty:
                     break
                 amostras_vistas.update(df_norm["numero_da_amostra"])
-            else:
-                novos = df_norm
-
             dados.append(df_norm)
             offset += 1
-
-            if offset > 500:
+            if offset > 300:
                 break
-
         if dados:
             df_param = pd.concat(dados, ignore_index=True)
             df_param["parametro_consultado"] = parametro_da_vez
             dados_totais.append(df_param)
-
     return pd.concat(dados_totais, ignore_index=True) if dados_totais else pd.DataFrame()
 
-
-# ---------- Layout / Inputs ----------
+# ---------- Interface ----------
 
 st.title("Dashboard Dengue & Vigiágua — RS")
-st.markdown("Dashboard integrado: ContaOvos, InfoDengue e API SisÁgua (Vigiágua).")
+st.markdown("Dashboard integrado com dados de **ContaOvos**, **InfoDengue** e **SisÁgua (Vigiágua)**.")
 
 codigos = carregar_codigos_ibge()
 municipios = sorted(codigos['MUNICÍPIO - IBGE'].unique().tolist())
@@ -156,22 +146,95 @@ with st.sidebar:
     ano = st.number_input("Ano", min_value=2000, max_value=2100, value=2025, step=1)
     atualizar = st.button("Atualizar / Recarregar")
 
-# Variáveis para evitar erro antes do clique
-dados_municipio = pd.DataFrame()
-dados_infodengue = pd.DataFrame()
-dados_parametros = pd.DataFrame()
-
-if atualizar:
+if not atualizar:
+    st.info("👈 Selecione o município e o ano e clique em **Atualizar / Recarregar** para carregar os dados.")
+else:
     with st.spinner("Carregando dados das APIs..."):
         dados_municipio = get_last_counting_public(municipio)
         dados_infodengue = buscar_dados_dengue(municipio, 1, 52, ano, ano, cod_ibge7_rs_dict)
         dados_parametros = buscar_parametros_sisagua(municipio, ano, cod_ibge7_rs_dict)
-    st.success("✅ Dados atualizados com sucesso!")
+    st.success("✅ Dados carregados com sucesso!")
 
-# ---------- Tabs ----------
-tab1, tab2, tab3, tab4 = st.tabs(["Dengue (ContaOvos + InfoDengue)", "Vigiágua (SisÁgua)", "Resumo", "Dados Brutos"])
+    # ---------- Abas ----------
+    tab1, tab2, tab3 = st.tabs(["🦟 Dengue", "💧 Vigiágua", "📊 Resumo"])
 
-if not atualizar:
-    st.info("👈 Selecione o município e o ano, depois clique em **Atualizar / Recarregar** para carregar os dados.")
-else:
-    'ola'
+    # --- TAB 1: DENGUE ---
+    with tab1:
+        st.subheader(f"Dengue — {municipio} ({ano})")
+
+        if dados_municipio.empty and dados_infodengue.empty:
+            st.info("Sem dados disponíveis para este município/ano.")
+        else:
+            # Calcular IPO
+            if not dados_municipio.empty and 'week' in dados_municipio.columns and 'year' in dados_municipio.columns:
+                dados_ipo = dados_municipio.groupby(['week','year']).apply(get_ipo).reset_index()
+                dados_ipo.columns = ['Semana Epidemiológica','Ano','IPO']
+                dados_ipo = dados_ipo[dados_ipo['Ano'] == int(ano)]
+                dados_ipo['IPO'] = dados_ipo['IPO'] * 100
+            else:
+                dados_ipo = pd.DataFrame(columns=['Semana Epidemiológica','IPO'])
+
+            # Preparar dados InfoDengue
+            if not dados_infodengue.empty:
+                dados_infodengue['Semana Epidemiológica'] = dados_infodengue['SE'].astype(str).str[-2:].astype(int)
+            else:
+                dados_infodengue = pd.DataFrame(columns=['Semana Epidemiológica','casos_est'])
+
+            # Criar gráfico combinado
+            fig = go.Figure()
+
+            if not dados_infodengue.empty:
+                fig.add_trace(go.Bar(
+                    x=dados_infodengue['Semana Epidemiológica'],
+                    y=dados_infodengue['casos_est'],
+                    name='Casos Estimados',
+                    marker_color='indianred',
+                    opacity=0.6,
+                    yaxis='y1'
+                ))
+
+            if not dados_ipo.empty:
+                fig.add_trace(go.Scatter(
+                    x=dados_ipo['Semana Epidemiológica'],
+                    y=dados_ipo['IPO'],
+                    name='IPO (%)',
+                    mode='lines+markers',
+                    line=dict(color='darkblue', width=3),
+                    yaxis='y2'
+                ))
+
+            fig.update_layout(
+                title=f"Casos Estimados (InfoDengue) e IPO (ContaOvos) — {municipio} ({ano})",
+                xaxis_title="Semana Epidemiológica",
+                yaxis=dict(title="Casos Estimados", showgrid=False),
+                yaxis2=dict(title="IPO (%)", overlaying='y', side='right', showgrid=False),
+                legend=dict(x=0.02, y=0.98),
+                template='plotly_white',
+                height=500
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
+    # --- TAB 2: VIGIÁGUA ---
+    with tab2:
+        st.subheader(f"Vigiágua — {municipio} ({ano})")
+        if dados_parametros.empty:
+            st.info("Sem registros Vigiágua para este município/ano.")
+        else:
+            resumo = dados_parametros.groupby('parametro_consultado').size().reset_index(name='Total de amostras')
+            st.dataframe(resumo)
+
+    # --- TAB 3: RESUMO ---
+    with tab3:
+        st.subheader("Resumo geral")
+        st.metric("Total registros ContaOvos", len(dados_municipio))
+        st.metric("Total InfoDengue", len(dados_infodengue))
+        st.metric("Total Vigiágua", len(dados_parametros))
+        st.markdown("### Exportar dados")
+        if not dados_infodengue.empty:
+            st.download_button("⬇️ Baixar InfoDengue CSV", dados_infodengue.to_csv(index=False), f"infodengue_{municipio}_{ano}.csv")
+        if not dados_parametros.empty:
+            st.download_button("⬇️ Baixar Vigiágua CSV", dados_parametros.to_csv(index=False), f"vigiagua_{municipio}_{ano}.csv")
+
+st.markdown("---")
+st.caption("© Dashboard desenvolvido com dados públicos — adaptável para uso em municípios do RS.")
