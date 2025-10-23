@@ -100,7 +100,7 @@ def buscar_parametros_sisagua(municipio: str, ano: int, cod_ibge7_rs_dict=None):
         while True:
             params = {
                 "codigo_ibge": codigo_ibge,
-                "ano": str(ano),
+                "ano_de_referencia": str(ano),
                 "limit": limit,
                 "offset": offset,
                 "parametro": parametro_da_vez
