@@ -239,14 +239,16 @@ else:
                 elif 'Escherichia' in p:
                     return 'Insatisfatória' if v == 'PRESENTE' else 'Satisfatória'
                 elif 'Fluoreto' in p:
-                    if 0.6 <= r <= 0.9 and row['tipo_da_forma_de_abastecimento'] == 'SAA':
-                        return 'Satisfatória'
-
-                    elif 0 <= r['resultado'] <= 1.5 and row['tipo_da_forma_de_abastecimento'] in ['SAC', 'SAI', 'CARRO-PIPA']:
-                        return 'Satisfatória'
-                    
+                    tipo = row.get('tipo_da_forma_de_abastecimento', '')
+                    if pd.notna(r):
+                        if 0.6 <= r <= 0.9 and tipo == 'SAA':
+                            return 'Satisfatória'
+                        elif 0 <= r <= 1.5 and tipo in ['SAC', 'SAI', 'CARRO-PIPA']:
+                            return 'Satisfatória'
+                        else:
+                            return 'Insatisfatória'
                     else:
-                        return 'Insatisfatória'
+                        return 'Sem resultado'
                 elif 'Cloro residual livre' in p:
                     return 'Insatisfatória' if (r < 0.2 or r > 5) else 'Satisfatória'
                 elif 'Cloro residual combinado' in p:
