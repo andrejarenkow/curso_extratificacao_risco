@@ -215,7 +215,7 @@ else:
 
             st.plotly_chart(fig, use_container_width=True)
 
-    # --- TAB 2: VIGIÁGUA ---
+
     # --- TAB 2: VIGIÁGUA ---
     with tab2:
         st.subheader(f"Vigiágua — {municipio} ({ano})")
@@ -260,7 +260,7 @@ else:
             )
     
             st.markdown("### Classificação da qualidade da água")
-            st.dataframe(resumo)
+            
     
             # Criar gráficos de pizza por parâmetro
             parametros = resumo['parametro_consultado'].unique()
@@ -281,6 +281,8 @@ else:
                     }
                 )
                 cols[i].plotly_chart(fig, use_container_width=True)
+
+            st.dataframe(resumo)
 
 
     # --- TAB 3: RESUMO ---
