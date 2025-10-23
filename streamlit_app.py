@@ -216,13 +216,72 @@ else:
             st.plotly_chart(fig, use_container_width=True)
 
     # --- TAB 2: VIGIÁGUA ---
+    # --- TAB 2: VIGIÁGUA ---
     with tab2:
         st.subheader(f"Vigiágua — {municipio} ({ano})")
+    
         if dados_parametros.empty:
             st.info("Sem registros Vigiágua para este município/ano.")
         else:
-            resumo = dados_parametros.groupby('parametro_consultado').size().reset_index(name='Total de amostras')
+            # Normalizar resultados
+            dados_parametros['resultado'] = dados_parametros['resultado'].astype(str).str.replace(',', '.')
+            dados_parametros['resultado_num'] = pd.to_numeric(dados_parametros['resultado'], errors='coerce')
+    
+            # Classificação simples conforme tipo de parâmetro
+            def classificar(row):
+                p = row.get('parametro_consultado', '')
+                r = row.get('resultado_num', None)
+                v = row.get('resultado', '').upper()
+                if pd.isna(r) and not v:
+                    return 'Sem resultado'
+                if 'Turbidez' in p:
+                    return 'Insatisfatória' if (pd.notna(r) and r > 5) else 'Satisfatória'
+                elif 'Escherichia' in p:
+                    return 'Insatisfatória' if v == 'PRESENTE' else 'Satisfatória'
+                elif 'Fluoreto' in p:
+                    if 0.6 <= r <= 0.9:
+                        return 'Satisfatória'
+                    else:
+                        return 'Insatisfatória'
+                elif 'Cloro residual livre' in p:
+                    return 'Insatisfatória' if (r < 0.2 or r > 5) else 'Satisfatória'
+                elif 'Cloro residual combinado' in p:
+                    return 'Insatisfatória' if (pd.notna(r) and r < 2) else 'Satisfatória'
+                else:
+                    return 'Satisfatória'
+    
+            dados_parametros['Classificação'] = dados_parametros.apply(classificar, axis=1)
+    
+            # Agrupar contagens por parâmetro
+            resumo = (
+                dados_parametros.groupby(['parametro_consultado', 'Classificação'])
+                .size()
+                .reset_index(name='Contagem')
+            )
+    
+            st.markdown("### Classificação da qualidade da água")
             st.dataframe(resumo)
+    
+            # Criar gráficos de pizza por parâmetro
+            parametros = resumo['parametro_consultado'].unique()
+            cols = st.columns(len(parametros))
+    
+            for i, param in enumerate(parametros):
+                sub = resumo[resumo['parametro_consultado'] == param]
+                fig = px.pie(
+                    sub,
+                    names='Classificação',
+                    values='Contagem',
+                    title=param,
+                    color='Classificação',
+                    color_discrete_map={
+                        'Satisfatória': '#2CA02C',
+                        'Insatisfatória': 'indianred',
+                        'Sem resultado': 'gray'
+                    }
+                )
+                cols[i].plotly_chart(fig, use_container_width=True)
+
 
     # --- TAB 3: RESUMO ---
     with tab3:
