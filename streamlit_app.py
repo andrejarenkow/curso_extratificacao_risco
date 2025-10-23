@@ -283,7 +283,7 @@ else:
                 .size()
                 .reset_index(name='Contagem')
             )
-            total_amostras = len(dados_parametros['numero_da_amostra'])
+            total_amostras = len(dados_parametros['numero_da_amostra'].unique())
             st.markdown(f"### Total de amostras - {total_amostras}")
             
     
