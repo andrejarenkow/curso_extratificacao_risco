@@ -206,11 +206,30 @@ else:
             fig.update_layout(
                 title=f"Casos Estimados (InfoDengue) e IPO (ContaOvos) — {municipio} ({ano})",
                 xaxis_title="Semana Epidemiológica",
-                yaxis=dict(title="Casos Estimados", showgrid=False),
-                yaxis2=dict(title="IPO (%)", overlaying='y', side='right', showgrid=False),
+                yaxis=dict(
+                    title="Casos Estimados",
+                    showgrid=False,
+                    rangemode='tozero',  # força eixo a começar em 0
+                    zeroline=True,
+                    zerolinewidth=1,
+                    zerolinecolor='gray',
+                    anchor='x',
+                    position=0.0
+                ),
+                yaxis2=dict(
+                    title="IPO (%)",
+                    overlaying='y',
+                    side='right',
+                    showgrid=False,
+                    rangemode='tozero',  # também começa em 0
+                    zeroline=True,
+                    zerolinewidth=1,
+                    zerolinecolor='gray'
+                ),
                 legend=dict(x=0.02, y=0.98),
                 template='plotly_white',
-                height=500
+                height=500,
+                margin=dict(l=60, r=60, t=50, b=50)
             )
 
             st.plotly_chart(fig, use_container_width=True)
